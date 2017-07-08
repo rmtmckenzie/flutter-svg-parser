@@ -17,21 +17,21 @@ class SvgGrammarDefinition extends GrammarDefinition {
       whitespace().star();
 
   /// moveto-drawto-command-group
-  /// | moveto-drawto-command-group wsp* moveto-drawto-command-groups
+  /// | moveto-drawto-command-group comma-or-wsp? moveto-drawto-command-groups
   moveToDrawToCommandGroups() =>
       (moveToDrawToCommandGroup() &
-          whitespace().star() &
+          commaOrWhitespace().optional() &
           ref(moveToDrawToCommandGroups))
       | moveToDrawToCommandGroup();
 
-  /// moveto wsp* drawto-commands?
+  /// moveto comma-or-wsp? drawto-commands?
   moveToDrawToCommandGroup() =>
-      moveTo() & commaWhitespace().optional() & drawToCommands();
+      moveTo() & commaOrWhitespace().optional() & drawToCommands();
 
   /// drawto-command
-  /// | drawto-command wsp* drawto-commands
+  /// | drawto-command comma-or-wsp? drawto-commands
   drawToCommands() =>
-      (drawToCommand() & whitespace().star() & ref(drawToCommands))
+      (drawToCommand() & commaOrWhitespace().optional() & ref(drawToCommands))
       | drawToCommand();
 
   /// closepath
@@ -43,36 +43,81 @@ class SvgGrammarDefinition extends GrammarDefinition {
   /// | quadratic-bezier-curveto
   /// | smooth-quadratic-bezier-curveto
   /// | elliptical-arc
-  drawToCommand() => closePath() | lineTo();
+  drawToCommand() =>
+    lineTo() |
+    horizontalLineTo() |
+    verticalLineTo() |
+    closePath() |
+    cubicBezierLineTo() |
+    quadraticBezierLineTo();
 
-  /// ( "M" | "m" ) wsp* moveto-argument-sequence
-  moveTo() => pattern('Mm') & whitespace().star() & moveToArgumentSequence();
-
-  /// coordinate-pair
-  /// | coordinate-pair comma-wsp? lineto-argument-sequence
-  moveToArgumentSequence() =>
-      (coordinatePair() &
-          commaWhitespace().optional() &
-          lineToArgumentSequence())
-      | coordinatePair();
+  /// ( "M" | "m" ) comma-or-wsp? moveto-argument-sequence
+  moveTo() => pattern('Mm') & commaOrWhitespace().optional() & pointToArgumentSequence();
 
   /// ( "Z" | "z" )
   closePath() => pattern('Zz');
 
-  /// ( "L" | "l" ) wsp* lineto-argument-sequence
-  lineTo() => pattern('Ll') & whitespace().star() & lineToArgumentSequence();
+  /// ( "L" | "l" ) comma-or-wsp? pointto-argument-sequence
+  lineTo() => pattern('Ll') & commaOrWhitespace().optional() & pointToArgumentSequence();
+
+  /// ("H" | "h" ) comma-or-wsp? singlearg-pointto-argument-sequence
+  horizontalLineTo() => pattern('Hh') & commaOrWhitespace().optional() & halfPointToArgumentSequence();
+
+  /// ("V" | "v" ) comma-or-wsp? singlearg-pointto-argument-sequence
+  verticalLineTo() => pattern('Vv') & commaOrWhitespace().optional() & halfPointToArgumentSequence();
+
+  /// ("Q" | "q") comma-or-wsp? double-pointto-argument-sequence
+  quadraticBezierLineTo() => pattern('Qq') & commaOrWhitespace().optional() & doublePointToArgumentSequence();
+
+  /// ("C" | "c") comma-or-wsp? triple-pointto-argument-sequence
+  cubicBezierLineTo() => pattern('Cc') & commaOrWhitespace().optional() & triplePointToArgumentSequence();
+
+  /// coordinate | coordinate comma-or-wsp? & horizontal-lineto-argument-sequence
+  halfPointToArgumentSequence() =>
+      (coordinate() &
+          commaOrWhitespace().optional() &
+          ref(halfPointToArgumentSequence))
+      | coordinate();
 
   /// coordinate-pair
-  /// | coordinate-pair comma-wsp? lineto-argument-sequence
-  lineToArgumentSequence() =>
+  /// | coordinate-pair comma-or-wsp? pointto-argument-sequence
+  pointToArgumentSequence() =>
       (coordinatePair() &
-          commaWhitespace().optional() &
-          ref(lineToArgumentSequence))
+          commaOrWhitespace().optional() &
+          ref(pointToArgumentSequence))
       | coordinatePair();
 
-  /// coordinate comma-wsp? coordinate
+  /// coordinate-pair comma-or-wsp? coordinate-pair
+  /// | coordinate-pair comma-or-wsp? coordinate-pair comma-or-wsp? double-pointto-argument-sequence
+  doublePointToArgumentSequence() =>
+      (coordinatePair() &
+          commaOrWhitespace().optional() &
+          coordinatePair() &
+          commaOrWhitespace().optional() &
+          ref(doublePointToArgumentSequence))
+      | (coordinatePair() &
+          commaOrWhitespace().optional() &
+          coordinatePair());
+
+  /// coordinate-pair comma-or-wsp? coordinate-pair comma-or-wsp? coordinate-pair
+  /// | coordinate-pair comma-or-wsp? coordinate-pair comma-or-wsp? coordinate-pair comma-or-wsp? triple-pointto-argument-sequence
+  triplePointToArgumentSequence() =>
+      (coordinatePair() &
+          commaOrWhitespace().optional() &
+          coordinatePair() &
+          commaOrWhitespace().optional() &
+          coordinatePair() &
+          commaOrWhitespace().optional() &
+          ref(triplePointToArgumentSequence))
+      | (coordinatePair() &
+          commaOrWhitespace().optional() &
+          coordinatePair() &
+          commaOrWhitespace().optional() &
+          coordinatePair());
+
+  /// coordinate comma-or-wsp? coordinate
   coordinatePair() =>
-      coordinate() & commaWhitespace().optional() & coordinate();
+      coordinate() & commaOrWhitespace().optional() & coordinate();
 
   /// number
   coordinate() => number();
@@ -94,6 +139,11 @@ class SvgGrammarDefinition extends GrammarDefinition {
   commaWhitespace() =>
       (comma() & whitespace().star())
       | (whitespace().plus() & comma().optional() & whitespace().star());
+
+  /// (wsp+) | (commaWhitespace)
+  commaOrWhitespace() =>
+      whitespace().plus()
+      | commaWhitespace();
 
   /// ","
   comma() => char(',');

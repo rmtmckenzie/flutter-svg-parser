@@ -8,7 +8,7 @@ import 'package:svg/src/parser.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('SvgParserDefinitiin', () {
+  group('SvgParserDefinition', () {
     final definition = const SvgParserDefinition();
 
     group('Fractional constants', () {
@@ -99,20 +99,20 @@ void main() {
       test('can parse a single line', () {
         expect(
             parseLine('l5,5').value,
-            [const SvgPathLineSegment(5, 5)]);
+            [const SvgPathLineSegment(5, 5, isRelative: true)]);
       });
 
       test('can parse a single line with fractional values', () {
         expect(
             parseLine('l1.2,3').value,
-            [const SvgPathLineSegment(1.2, 3)]);
+            [const SvgPathLineSegment(1.2, 3, isRelative: true)]);
       });
 
       test('can parse multiple line values', () {
         expect(
             parseLine('l1,1,2,2').value, [
-              const SvgPathLineSegment(1, 1),
-              const SvgPathLineSegment(2, 2)
+              const SvgPathLineSegment(1, 1, isRelative: true),
+              const SvgPathLineSegment(2, 2, isRelative: true)
             ]);
       });
     });
@@ -126,6 +126,12 @@ void main() {
         expect(
             parseMove('m5,5').value,
             [const SvgPathMoveSegment(5, 5)]);
+      });
+
+      test('can parse a simple command using space', () {
+        expect(
+          parseMove('m5 5').value,
+          [const SvgPathMoveSegment(5, 5)]);
       });
 
       test('can parse followed by additional moves', () {
@@ -149,7 +155,7 @@ void main() {
 
       test('can parse a line to', () {
         expect(parseDraw('l5,5').value, [
-          const SvgPathLineSegment(5, 5)
+          const SvgPathLineSegment(5, 5, isRelative: true)
         ]);
       });
     });
@@ -171,6 +177,31 @@ void main() {
         expect(parseDraws('L5.5,4.4L3.3,2.2z').value, [
           const SvgPathLineSegment(5.5, 4.4),
           const SvgPathLineSegment(3.3, 2.2),
+          const SvgPathClose()
+        ]);
+      });
+
+      test('can parse multiple lines with space inbetween', () {
+        expect(parseDraws('L8,9 L8,7z').value, [
+          const SvgPathLineSegment(8, 9),
+          const SvgPathLineSegment(8, 7),
+          const SvgPathClose()
+        ]);
+      });
+
+      test('can parse multiple lines with no separator', () {
+        expect(parseDraws('L5.5,4.4 3.3,2.2 1.1,0.0z').value, [
+          const SvgPathLineSegment(5.5, 4.4),
+          const SvgPathLineSegment(3.3, 2.2),
+          const SvgPathLineSegment(1.1, 0.0),
+          const SvgPathClose()
+        ]);
+      });
+
+      test('parse relative', () {
+        expect(parseDraws('L0,0l10,5z').value, [
+          const SvgPathLineSegment(0, 0, isRelative: false),
+          const SvgPathLineSegment(10, 5, isRelative: true),
           const SvgPathClose()
         ]);
       });
@@ -197,6 +228,257 @@ void main() {
               const SvgPathMoveSegment(1, 2),
               const SvgPathLineSegment(3, 4)
             ]);
+      });
+
+      test('can parse a move/draw command with a space in between', () {
+        expect(
+          parseDraw('M1,2 L3,4').value,
+          const [
+            const SvgPathMoveSegment(1, 2),
+            const SvgPathLineSegment(3, 4)
+          ]);
+      });
+    });
+
+    group('Horizontal draw to command', () {
+      final parseDraw = definition.build(
+        start: definition.drawToCommand)
+        .parse;
+
+      test('can parse a horizontal line to command', () {
+        expect(
+          parseDraw('H1').value,
+          const [
+            const SvgPathLineSegment(1, null, isRelative: false)
+          ]);
+      });
+
+      test('can parse a relative horizontal line to command', () {
+        expect(
+          parseDraw('h2').value,
+          const [
+            const SvgPathLineSegment(2, null, isRelative : true)
+          ]);
+      });
+
+      test('can parse a horizontal line with whitespace', () {
+        expect(
+          parseDraw('H 3').value,
+          const [
+            const SvgPathLineSegment(3, null)
+          ]);
+      });
+    });
+
+    group('Horizontal draw to (multiple)', () {
+      final parseDraws = definition.build(
+        start: definition.drawToCommands)
+        .parse;
+
+      test('can parse multiple horizontal draws with a close', () {
+        expect(
+          parseDraws('h1H2z').value,
+          const [
+            const SvgPathLineSegment(1, null, isRelative: true),
+            const SvgPathLineSegment(2, null, isRelative: false),
+            const SvgPathClose()
+          ]);
+      });
+
+      test('can parse multiple horizontal draws with space inbetween', () {
+        expect(
+          parseDraws('H3 H5z').value,
+          const [
+            const SvgPathLineSegment(3, null),
+            const SvgPathLineSegment(5, null),
+            const SvgPathClose()
+          ]);
+      });
+
+      test('can parse two horizontal draws with no specifier', () {
+        expect(
+          parseDraws('H1-2z').value,
+          const[
+            const SvgPathLineSegment(1, null),
+            const SvgPathLineSegment(-2, null),
+            const SvgPathClose()
+          ]);
+      });
+
+      test('can parse multiple horizontal draws with no specifier', () {
+        expect(
+          parseDraws('H7.5 -8.1 -3z').value,
+          const[
+            const SvgPathLineSegment(7.5, null),
+            const SvgPathLineSegment(-8.1, null),
+            const SvgPathLineSegment(-3, null),
+            const SvgPathClose()
+          ]);
+      });
+    });
+
+    group('Vertical draw to command', () {
+      final parseDraw = definition.build(
+        start: definition.drawToCommand)
+        .parse;
+
+      test('can parse a vertical line to command', () {
+        expect(
+          parseDraw('V1').value,
+          const [
+            const SvgPathLineSegment(null, 1, isRelative: false)
+          ]);
+      });
+
+      test('can parse a relative vertical line to command', () {
+        expect(
+          parseDraw('v2').value,
+          const [
+            const SvgPathLineSegment(null, 2, isRelative : true)
+          ]);
+      });
+
+      test('can parse a vertical line with whitespace', () {
+        expect(
+          parseDraw('V 3').value,
+          const [
+            const SvgPathLineSegment(null, 3)
+          ]);
+      });
+    });
+
+    group('Vertical draw to (multiple)', () {
+      final parseDraws = definition.build(
+        start: definition.drawToCommands)
+        .parse;
+
+      test('can parse multiple vertical draws with a close', () {
+        expect(
+          parseDraws('v1V2z').value,
+          const [
+            const SvgPathLineSegment(null, 1, isRelative: true),
+            const SvgPathLineSegment(null, 2, isRelative: false),
+            const SvgPathClose()
+          ]);
+      });
+
+      test('can parse multiple vertical draws with space inbetween', () {
+        expect(
+          parseDraws('V3 V5z').value,
+          const [
+            const SvgPathLineSegment(null, 3),
+            const SvgPathLineSegment(null, 5),
+            const SvgPathClose()
+          ]);
+      });
+
+      test('can parse two vertical draws with no specifier', () {
+        expect(
+          parseDraws('V1-2z').value,
+          const[
+            const SvgPathLineSegment(null, 1),
+            const SvgPathLineSegment(null, -2),
+            const SvgPathClose()
+          ]);
+      });
+
+      test('can parse multiple vertical draws with no specifier', () {
+        expect(
+          parseDraws('V7.5 -8.1 -3z').value,
+          const[
+            const SvgPathLineSegment(null, 7.5),
+            const SvgPathLineSegment(null, -8.1),
+            const SvgPathLineSegment(null, -3),
+            const SvgPathClose()
+          ]);
+      });
+    });
+
+    group('Quadratic Curve Draw To', () {
+      final parseDraw = definition.build(
+        start: definition.drawToCommand)
+        .parse;
+
+      test('can parse a quadratic line to command', () {
+        expect(
+          parseDraw('Q 1.5,1.5 2,2').value,
+          const[
+            const SvgPathCurveQuadraticSegment(2, 2, 1.5, 1.5)
+          ]);
+      });
+
+      test('can parse a relative quadratic line', () {
+        expect(
+          parseDraw('q1 2 3 4').value,
+          const [
+            const SvgPathCurveQuadraticSegment(3, 4, 1, 2, isRelative: true)
+          ]);
+      });
+    });
+
+    group('Quadratic Curve Draw To (Multiple)', () {
+      final parseDraws = definition.build(
+        start: definition.drawToCommands)
+        .parse;
+
+      test('can parse multiple curves with only one specifier', () {
+        expect(
+          parseDraws('Q1 2 3 4 5 6 7 8z').value,
+          const [
+            const SvgPathCurveQuadraticSegment(3, 4, 1, 2),
+            const SvgPathCurveQuadraticSegment(7, 8, 5, 6),
+            const SvgPathClose()
+          ]);
+      });
+
+      test('can parse parse multiple curves with multiple specifiers', () {
+        expect(
+          parseDraws('Q1 2 3 4 q1.2,3.4 5.6,78z').value,
+          const [
+            const SvgPathCurveQuadraticSegment(3, 4, 1, 2),
+            const SvgPathCurveQuadraticSegment(5.6, 78, 1.2, 3.4, isRelative: true),
+            const SvgPathClose()
+          ]);
+      });
+    });
+
+    group('Cubic Curve Draw To', () {
+      final parseDraw = definition
+        .build(
+        start: definition.drawToCommand)
+        .parse;
+
+      test('can parse a cubic line to command', () {
+        expect(
+          parseDraw('C 1.5,1.5 2,2 3,3').value,
+          const[
+            const SvgPathCurveCubicSegment(3, 3, 1.5, 1.5, 2, 2)
+          ]);
+      });
+    });
+
+    group('Cubic Curve Draw To (Multiple)', () {
+      final parseDraws = definition.build(
+        start: definition.drawToCommands)
+        .parse;
+
+      test('can parse multiple curves with only one specifier', () {
+        expect(
+          parseDraws('C1,2 3,4 5,6 7,8,9,10,11,12').value,
+          const [
+            const SvgPathCurveCubicSegment(5, 6, 1, 2, 3, 4),
+            const SvgPathCurveCubicSegment(11, 12, 7, 8, 9, 10)
+          ]);
+      });
+
+      test('can parse multiple curves with multiple specifiers', () {
+        expect(
+          parseDraws('C 1.1 2.2 3.3 4.4 5.5 6.6 c1,2,3,4,5,6z').value,
+          const [
+            const SvgPathCurveCubicSegment(5.5, 6.6, 1.1, 2.2, 3.3, 4.4, isRelative: false),
+            const SvgPathCurveCubicSegment(5, 6, 1, 2, 3, 4, isRelative: true),
+            const SvgPathClose()
+          ]);
       });
     });
 
