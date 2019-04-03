@@ -22,3 +22,9 @@ pubspec.lock
 .idea
 *.iml
 .c9
+
+# Macos
+**/.DS_Store
+
+# Pub
+.packages

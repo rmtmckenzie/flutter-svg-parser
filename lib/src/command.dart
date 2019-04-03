@@ -97,6 +97,12 @@ class SvgPathCurveQuadraticSegment extends SvgPathPositionSegment {
   /// First control point (y).
   final num y1;
 
+  const SvgPathCurveQuadraticSegment.smooth(
+      num x,
+      num y, {
+      bool isRelative: false})
+          : this(x, y, null, null, isRelative: isRelative);
+
   const SvgPathCurveQuadraticSegment(
       num x,
       num y,
@@ -116,6 +122,8 @@ class SvgPathCurveQuadraticSegment extends SvgPathPositionSegment {
     other.isRelative == isRelative;
   }
 
+  bool get isSmooth => x1 == null && y1 == null;
+
   @override
   String toString() => 'SvgPathCurveCubicSegment ' + {
     'x': x,
@@ -126,22 +134,38 @@ class SvgPathCurveQuadraticSegment extends SvgPathPositionSegment {
   }.toString();
 }
 
-class SvgPathCurveCubicSegment extends SvgPathCurveQuadraticSegment {
+class SvgPathCurveCubicSegment extends SvgPathPositionSegment {
+  /// First control point (x).
+  final num x1;
+
+  /// First control point (y).
+  final num y1;
+
   /// Second control point (x).
   final num x2;
 
   /// Second control point (y).
   final num y2;
 
+  const SvgPathCurveCubicSegment.smooth(
+      num x,
+      num y,
+      x2,
+      y2, {
+      bool isRelative: false}):
+        this(x, y, null, null, x2, y2, isRelative: isRelative);
+
   const SvgPathCurveCubicSegment(
       num x,
       num y,
-      num x1,
-      num y1,
+      this.x1,
+      this.y1,
       this.x2,
       this.y2, {
       bool isRelative: false}) :
-          super(x, y, x1, y1, isRelative: isRelative);
+          super(x, y, SvgPathSegmentType.CurveTo, isRelative: isRelative);
+
+  bool get isSmooth => x1 == null && y1 == null;
 
   @override
   bool operator==(o) {

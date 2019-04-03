@@ -6,10 +6,13 @@ import 'package:test/test.dart';
 
 void main() {
   group('SvgGrammarDefinition', () {
-    final definition = const SvgGrammarDefinition();;
+    final definition = const SvgGrammarDefinition();
+    ;
 
     group('Digits', () {
-      final parseDigits = definition.digitSequence().parse;
+      final parseDigits = definition
+        .digitSequence()
+        .parse;
 
       test('can parse a single digit', () {
         expect(parseDigits('5').value, '5');
@@ -21,7 +24,9 @@ void main() {
     });
 
     group('Exponents', () {
-      final parseExponent = definition.exponent().parse;
+      final parseExponent = definition
+        .exponent()
+        .parse;
 
       test('can parse a positive exponent', () {
         expect(parseExponent('e+50').value, ['e', '+', '50']);
@@ -33,11 +38,15 @@ void main() {
     });
 
     group('Fractional constants', () {
-      final parseFraction = definition.fractionalConstant().parse;
-      final acceptFraction = definition.fractionalConstant().accept;
+      final parseFraction = definition
+        .fractionalConstant()
+        .parse;
+      final acceptFraction = definition
+        .fractionalConstant()
+        .accept;
 
       test('can parse without leading zero', () {
-        expect(parseFraction('.05').value, [null, '.', '05']);
+        expect(parseFraction('.05').value, ['.', '05']);
       });
 
       test('can parse with leading zero', () {
@@ -54,25 +63,29 @@ void main() {
     });
 
     group('Floating point constants', () {
-      final parseFloat = definition.floatingPointConstant().parse;
+      final parseFloat = definition
+        .floatingPointConstant()
+        .parse;
 
       test('can parse with a fraction', () {
-        expect(parseFloat('1.05').value , [['1', '.', '05'], null]);
+        expect(parseFloat('1.05').value, ['1', '.', '05']);
       });
 
       test('can parse with digits and an exponent', () {
-        expect(parseFloat('12e5').value, ['12', ['e', null, '5']]);
+        expect(parseFloat('12e5').value, ['12', ['e', '5']]);
       });
 
       test('can parse with a fraction and leading exponent', () {
         expect(
-            parseFloat('0.05e5').value,
-            [['0', '.', '05'], ['e', null, '5']]);
+          parseFloat('0.05e5').value,
+          [['0', '.', '05'], ['e', '5']]);
       });
     });
 
     group('Integer constant', () {
-      final parseInt = definition.integerConstant().parse;
+      final parseInt = definition
+        .integerConstant()
+        .parse;
 
       test('can parse a single digit', () {
         expect(parseInt('5').value, '5');
@@ -84,26 +97,30 @@ void main() {
     });
 
     group('Comma and whitespace', () {
-      final parseCommaWsp = definition.commaWhitespace().parse;
+      final parseCommaWsp = definition
+        .commaWhitespace()
+        .parse;
 
       test('can parse simple case', () {
         expect(parseCommaWsp(' , ').value, [[' '], ',', [' ']]);
       });
 
       test('can parse without whitespace', () {
-        expect(parseCommaWsp(',').value, [',', []]);
+        expect(parseCommaWsp(',').value, ',');
       });
 
       test('can parse without a comma', () {
-        expect(parseCommaWsp(' ').value, [[' '], null, []]);
+        expect(parseCommaWsp(' ').value, [' ']);
       });
     });
 
     group('Number', () {
-      final parseNum = definition.number().parse;
+      final parseNum = definition
+        .number()
+        .parse;
 
       test('can parse a positive number', () {
-        expect(parseNum('5').value, [null, '5']);
+        expect(parseNum('5').value, '5');
       });
 
       test('can parse a negative number', () {
@@ -112,97 +129,89 @@ void main() {
     });
 
     group('Non-negative number', () {
-      final parseNonNegative = definition.nonNegativeNumber().parse;
+      final parseNonNegative = definition
+        .nonNegativeNumber()
+        .parse;
 
       test('can parse an integer', () {
         expect(parseNonNegative('50').value, '50');
       });
 
       test('can parse a float', () {
-        expect(parseNonNegative('1.05').value , [['1', '.', '05'], null]);
+        expect(parseNonNegative('1.05').value, ['1', '.', '05']);
       });
     });
 
     group('Coordinate pair', () {
-      final parseCoordinatePair = definition.coordinatePair().parse;
+      final parseCoordinatePair = definition
+        .coordinatePair()
+        .parse;
 
       test('can parse single digits', () {
         expect(
-            parseCoordinatePair('5,5').value,
-            [[null, '5'], [',', []], [null, '5']]);
+          parseCoordinatePair('5,5').value,
+          ['5', ',', '5']);
       });
 
       test('can parse multiple digits', () {
         expect(
-            parseCoordinatePair('12,-12').value,
-            [[null, '12'], [',', []], ['-', '12']]);
+          parseCoordinatePair('12,-12').value,
+          ['12', ',', ['-', '12']]);
       });
     });
 
     group('Line to', () {
-      final parseLine = definition.build(
-          start: definition.lineTo)
-          .parse;
+      final parseLine = definition
+        .build(
+        start: definition.lineTo)
+        .parse;
 
       test('can parse a single line', () {
         expect(
-            parseLine('l5,5').value,
-            ['l', null, [[null, '5'], [',', []], [null, '5']]]);
+          parseLine('l5,5').value,
+          ['l', [['5', ',', '5']]]);
       });
 
-      test('can parse a single line with fractional values', () {
-        expect(parseLine('l1.2,3').value, [
-            'l', null, [[null, [['1', '.', '2'], null]], [',', []], [null, '3']]
-        ]);
+      test('can parse a fractional value single line', () {
+        expect(parseLine('l1.2,3').value,
+          ['l', [
+            [['1', '.', '2'], ',', '3']
+          ]]);
       });
 
       test('can parse multiple line values', () {
-        expect(parseLine('l1,1,2,2').value, [
-          'l',
-          null,
+        expect(parseLine('l1,1,2,2').value,
           [
-            [null, '1'],
-            [',', []],
-            [null, '1'],
-            [',', []],
-            [[null, '2'], [',', []], [null, '2']]
-          ]
-        ]);
+            'l',
+            [['1', ',', '1'], [',', ['2', ',', '2']]]
+          ]);
       });
     });
 
     group('Move to', () {
-      final parseMove = definition.build(
-          start: definition.moveTo)
-          .parse;
+      final parseMove = definition
+        .build(
+        start: definition.moveTo)
+        .parse;
 
       test('can parse a simple command', () {
         expect(
-            parseMove('m5,5').value,
-            ['m', null, [[null, '5'], [',', []], [null, '5']]]);
+          parseMove('m5,5').value,
+          ['m', [['5', ',', '5']]]);
       });
 
       test('can parse followed by additional moves', () {
         expect(
-            parseMove('M0,0,5,5').value,
-            [
-              'M',
-              null,
-              [
-                [null, '0'],
-                [',', []],
-                [null, '0'],
-                [',', []],
-                [[null, '5'], [',', []], [null, '5']]
-              ]
-            ]);
+          parseMove('M0,0,5,5').value,
+          ['M', [['0', ',', '0'], [',', ['5', ',', '5']]]]);
       });
     });
 
     group('Draw to', () {
-      final parseDraw = definition.build(
-          start: definition.drawToCommand)
-          .parse;
+      final parseDraw = definition
+        .build(
+        start: definition.drawToCommand)
+        .parse;
 
       test('can parse a close path', () {
         expect(parseDraw('z').value, 'z');
@@ -210,246 +219,341 @@ void main() {
 
       test('can parse a line to', () {
         expect(
-            parseDraw('l5,5').value,
-            ['l', null, [[null, '5'], [',', []], [null, '5']]]);
+          parseDraw('l5,5').value,
+          ['l', [['5', ',', '5']]]);
+      });
+    });
+
+    group('Draw to (multiple)', () {
+      final parseDraws = definition
+        .build(
+        start: definition.drawToCommands)
+        .parse;
+
+      test('can parse multiple lines, then a close', () {
+        expect(parseDraws('L15,15L14,14z').value,
+          [['L', [['15', ',', '15']]], ['L', [['14', ',', '14']]], 'z']);
+      });
+
+      test('can parse multiple lines with fractional values', () {
+        expect(parseDraws('L5.5,4.4L3.3,2.2z').value, [
+          ['L', [[['5', '.', '5'], ',', ['4', '.', '4']]]],
+          ['L', [[['3', '.', '3'], ',', ['2', '.', '2']]]],
+          'z'
+        ]);
       });
     });
 
     group('Horizontal Draw to', () {
-      final parseDraw = definition.build(
+      final parseDraw = definition
+        .build(
         start: definition.horizontalLineTo)
         .parse;
 
       test('Can parse a simple horizontal command', () {
         expect(
-            parseDraw('h10').value,
-            ['h', null, [null, '10']]);
+          parseDraw('h10').value,
+          ['h', ['10']]);
       });
 
       test('Can parse a multiple horizontal command', () {
         expect(
-            parseDraw('h10 20,30').value,
-            ['h', null, [[null, '10'], [' '], [[null, '20'], [',', []], [null, '30']]]]);
+          parseDraw('h10 20,30').value,
+          ['h', ['10', [[' '], '20'], [',', '30']]]);
       });
     });
 
     group('Vertical Draw to', () {
-      final parseDraw = definition.build(
-          start: definition.verticalLineTo)
-          .parse;
+      final parseDraw = definition
+        .build(
+        start: definition.verticalLineTo)
+        .parse;
 
       test('Can parse a simple vertical command', () {
         expect(
-            parseDraw('v12').value,
-            ['v', null, [null, '12']]);
+          parseDraw('v12').value,
+          ['v', ['12']]);
       });
 
       test('Can parse multiple vertical commands', () {
         expect(
           parseDraw('V10 20').value,
-          ['V', null, [[null, '10'], [' '], [null, '20']]]);
+          ['V', ['10', [[' '], '20']]]);
       });
     });
 
     group('Quadratic Draw to', () {
-      final parseDraw = definition.build(
+      final parseDraw = definition
+        .build(
         start: definition.quadraticBezierLineTo)
         .parse;
 
       test('Can parse a simple quadratic draw command', () {
         expect(
-          parseDraw('Q6,2 7,6').value,
-          ['Q', null, [
-            [null, '6'], [',', []], [null, '2'], [' '], [[null, '7'], [',', []], [null, '6']]
-          ]]);
+          parseDraw('Q6,2 7,6').value, ['Q', [[['6', ',', '2'], [[' '], ['7', ',', '6']]]]]);
       });
 
       test('Can parse a double quadratic draw commands', () {
-        expect (
-          parseDraw('Q1.1,2.2,3.3,4.4,5,6,7,8').value,
-          ['Q', null, [
-            [null, [['1', '.', '1'], null]], [',', []], [null, [['2','.', '2'], null]], [',', []], [[null, [['3','.','3'], null]], [',', []], [null, [['4','.','4'], null]]], [',', []], [
-              [null, '5'], [',', []], [null, '6'], [',', []], [[null, '7'], [',', []], [null, '8']]
-            ]
-          ]]);
+        expect(
+          parseDraw('Q1.1,2.2,3.3,4.4,5,6,7,8').value, [
+          'Q',
+          [
+            [
+              [['1', '.', '1'], ',', ['2', '.', '2']],
+              [',', [['3', '.', '3'], ',', ['4', '.', '4']]]
+            ],
+            [[',', ['5', ',', '6']], [',', ['7', ',', '8']]]
+          ]
+        ]);
       });
 
       test('Can parse a triple quadratic draw command', () {
         expect(
           parseDraw('Q1,1 2,2  3,3 4,4  5,5 6,6').value,
           [
-            'Q', null,[
-              [null, '1'], [',', []], [null, '1'], [' '], [[null, '2'], [',', []], [null, '2']], [' ', ' '], [
-                [null, '3'], [',', []], [null, '3'], [' '], [[null, '4'], [',', []], [null, '4']], [' ', ' '], [
-                  [null, '5'], [',', []], [null, '5'], [' '], [[null, '6'], [',', []], [null, '6']]
-                ]
-              ]
+            'Q',
+            [
+              [['1', ',', '1'], [[' '], ['2', ',', '2']]],
+              [[[' ', ' '], ['3', ',', '3']], [[' '], ['4', ',', '4']]],
+              [[[' ', ' '], ['5', ',', '5']], [[' '], ['6', ',', '6']]]
             ]
           ]);
       });
     });
 
     group('Cubic draw to', () {
-      final parseDraw = definition.build(
+      final parseDraw = definition
+        .build(
         start: definition.cubicBezierLineTo)
         .parse;
 
       test('Can parse a simple cubic draw command', () {
         expect(
           parseDraw('c1,1 2,2 3,3').value,
-          ['c', null, [
-            [null, '1'], [',', []], [null, '1'], [' '], [[null, '2'], [',', []], [null, '2']], [' '], [[null, '3'], [',', []], [null, '3']]
-          ]]);
+          ['c', [[['1', ',', '1'], [[' '], ['2', ',', '2']], [[' '], ['3', ',', '3']]]]]);
       });
 
       test('Can parse a double cubic draw command', () {
         expect(
           parseDraw('C0,1 2,3 4,5 6,7 8,9 10,11').value,
-          ['C', null, [
-            [null, '0'], [',', []], [null, '1'], [' '], [[null, '2'], [',', []], [null, '3']], [' '], [[null, '4'], [',', []], [null, '5']], [' '], [
-              [null, '6'], [',', []], [null, '7'], [' '], [[null, '8'], [',', []], [null, '9']], [' '], [[null, '10'], [',', []], [null, '11']]
+          [
+            'C',
+            [
+              [['0', ',', '1'], [[' '], ['2', ',', '3']], [[' '], ['4', ',', '5']]],
+              [
+                [[' '], ['6', ',', '7']],
+                [[' '], ['8', ',', '9']],
+                [[' '], ['10', ',', '11']]
+              ]
             ]
-          ]]);
+          ]);
       });
 
       test('Can parse a triple cubic draw command', () {
         expect(
           parseDraw('c1,1 2,2 3,3  4,4 5,5 6,6  7,7 8,8 9,9').value,
-          ['c', null, [
-            [null, '1'], [',', []], [null, '1'], [' '], [[null, '2'], [',', []], [null, '2']], [' '], [[null, '3'], [',', []], [null, '3']], [' ', ' '], [
-              [null, '4'], [',', []], [null, '4'], [' '], [[null, '5'], [',', []], [null, '5']], [' '], [[null, '6'], [',', []], [null, '6']], [' ', ' '], [
-                [null, '7'], [',', []], [null, '7'], [' '], [[null, '8'], [',', []], [null, '8']], [' '], [[null, '9'], [',', []], [null, '9']]
+          [
+            'c',
+            [
+              [
+                ['1', ',', '1'],
+                [[' '], ['2', ',', '2']],
+                [[' '], ['3', ',', '3']]
+              ],
+              [
+                [[' ', ' '], ['4', ',', '4']],
+                [[' '], ['5', ',', '5']],
+                [[' '], ['6', ',', '6']]
+              ],
+              [
+                [[' ', ' '], ['7', ',', '7']],
+                [[' '], ['8', ',', '8']],
+                [[' '], ['9', ',', '9']]
               ]
             ]
-          ]]);
+          ]);
       });
     });
 
-    group('Draw to (multiple)', () {
-      final parseDraws = definition.build(
-          start: definition.drawToCommands)
-          .parse;
+    group('Smooth quadtratic draw to command', () {
+      final parseDraw = definition
+        .build(start: definition.smoothQuadraticBezierLineTo).parse;
 
-      test('can parse multiple lines, then a close', () {
-        expect(parseDraws('L15,15L14,14z').value, [
-          ['L', null, [[null, '15'], [',', []], [null, '15']]],
-          null,
-          [['L', null, [[null, '14'], [',', []], [null, '14']]], null, 'z']
-        ]);
+      test('can parse a smooth quadratic draw to command', () {
+        expect(
+          parseDraw('t1,2').value,
+          [
+            't',
+            [
+              ['1', ',', '2']
+            ]
+          ]
+        );
       });
 
-      test('can parse multiple lines with fractional values', () {
-        expect(parseDraws('L5.5,4.4L3.3,2.2z').value, [
+      test('can parse multiple smooth quadratic draw to commands', () {
+        expect(
+          parseDraw('T1,4 2,3 6,7.1').value,
           [
-            'L',
-            null,
+            'T',
             [
-              [null, [['5', '.', '5'], null]],
-              [',', []],
-              [null, [['4', '.', '4'], null]]
+              ['1', ',', '4'],
+              [[' '], ['2', ',', '3']],
+              [[' '], ['6', ',', ['7', '.', '1']]]
             ]
-          ],
-          null,
-          [
-            [
-              'L',
-              null,
-              [
-                [null, [['3', '.', '3'], null]],
-                [',', []],
-                [null, [['2', '.', '2'], null]]
-              ]
-            ],
-            null,
-            'z'
           ]
-        ]);
+        );
+      });
+    });
+
+    group('Smooth cubic draw to command', () {
+      final parseDraw = definition
+        .build(start: definition.smoothCubicBezierLineTo).parse;
+
+      test('can parse a smooth cubic draw to command', () {
+        expect(
+          parseDraw('S1,2 3,4').value,
+          [
+            'S',
+            [
+              [
+                ['1', ',', '2'],
+                [[' '], ['3', ',', '4']]
+              ]
+            ]
+          ]
+        );
+      });
+
+      test('can parse multiple smoth cubic draw to commands', () {
+        expect(
+          parseDraw('S 1 2 3 4, 5 6 7 8').value,
+          [
+            'S',
+            [
+              [
+                [[' '], ['1', [' '], '2']],
+                [[' '], ['3', [' '], '4']]
+              ],
+              [
+                [[',', [' ']], ['5', [' '], '6']],
+                [[' '], ['7', [' '], '8']]
+              ]
+            ]
+          ]
+        );
       });
     });
 
     group('Move to draw to command', () {
-      final parseDraw = definition.build(
-          start: definition.moveToDrawToCommandGroup)
-          .parse;
+      final parseDraw = definition
+        .build(start: definition.moveToDrawToCommandGroup).parse;
 
       test('can parse a move/draw command', () {
         expect(
-          parseDraw('M1,2L3,4').value, [
-          'M', null, [[null, '1'], [',', []], [null, '2']], null, [
-            'L', null, [[null, '3'], [',', []], [null, '4']]]
-          ]);
+          parseDraw('M1,2L3,4').value,
+          ['M', [['1', ',', '2']], [['L', [['3', ',', '4']]]]]);
       });
 
       test('can parse a move/draw command with a comma in between', () {
         expect(
-          parseDraw('M1,2,L3,4').value, [
-            'M', null, [[null, '1'], [',', []], [null, '2']], [',', []], [
-              'L', null, [[null, '3'], [',', []], [null, '4']]]
-        ]);
+          parseDraw('M1,2,L3,4').value,
+          ['M', [['1', ',', '2']], [[',', ['L', [['3', ',', '4']]]]]]);
       });
     });
 
     group('Move to draw to command groups', () {
-      final parseDraws = definition.build(
-          start: definition.moveToDrawToCommandGroups)
-          .parse;
+      final parseDraws = definition
+        .build(
+        start: definition.moveToDrawToCommandGroups)
+        .parse;
 
       test('can parse a move/draw command', () {
-        expect(parseDraws('M1,2L3,4M5,6L7,8').value, [
-          'M',
-          null,
-          [[null, '1'], [',', []], [null, '2']],
-          null,
-          ['L', null, [[null, '3'], [',', []], [null, '4']]],
-          null,
+        expect(
+          parseDraws('M1,2L3,4M5,6L7,8').value,
           [
-            'M',
-            null,
-            [[null, '5'], [',', []], [null, '6']],
-            null,
-            ['L', null, [[null, '7'], [',', []], [null, '8']]]
-          ]
-        ]);
+            ['M', [['1', ',', '2']], [['L', [['3', ',', '4']]]]],
+            ['M', [['5', ',', '6']], [['L', [['7', ',', '8']]]]]
+          ]);
       });
     });
 
     group('Path', () {
-      final parseSvgPath = definition.build(
-          start: definition.moveToDrawToCommandGroups)
-          .parse;
+      final parseSvgPath = definition
+        .build(
+        start: definition.moveToDrawToCommandGroups)
+        .parse;
 
       test('can parse a path', () {
         // This is a shape path for drawing an up-arrow :)
-        expect(parseSvgPath('M0,15,L15,15L7.5,0z').value, [
-          'M',
-          null,
-          [[null, '0'], [',', []], [null, '15']],
-          [',', []],
+        expect(
+          parseSvgPath('M0,15,L15,15L7.5,0z').value,
           [
-            ['L', null, [[null, '15'], [',', []], [null, '15']]],
-            null,
             [
+              'M',
+              [['0', ',', '15']],
               [
-                'L',
-                null,
-                [[null, [['7', '.', '5'], null]],
-                [',', []],
-                [null, '0']]
-              ],
-              null,
-              'z'
+                [',', ['L', [['15', ',', '15']]]],
+                ['L', [[['7', '.', '5'], ',', '0']]],
+                'z'
+              ]
             ]
-          ]
-        ]);
+          ]);
       });
 
-      test('can parse a poorly formatted path', () {
-        expect(parseSvgPath('M1,1 ,C14,12,13,14,15,16'),
-//        expect(parseSvgPath('M1,1 , L14,12        4,3, L, 32.0 , 1  z').value,
-        [
-
-        ]);
+      test('can parse a slightly poorly formatted path', () {
+        expect(
+          parseSvgPath('M1,1 ,C14,12,13,14,15,16').value,
+          [
+            [
+              'M',
+              [['1', ',', '1']],
+              [[
+                  [[' '], ','],
+                  [
+                    'C',
+                    [
+                      [
+                        ['14', ',', '12'],
+                        [',', ['13', ',', '14']],
+                        [',', ['15', ',', '16']]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]);
       });
+
+      test('can parse a very poorly formatted path', () {
+        expect(
+          parseSvgPath('M1,1 , L14,12        4,3, L, 32.0 , 1  z').value,
+          [
+            [
+              'M',
+              [['1', ',', '1']],
+              [
+                [
+                  [[' '], ',', [' ']],
+                  [
+                    'L',
+                    [
+                      ['14', ',', '12'],
+                      [[' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '], ['4', ',', '3']]
+                    ]
+                  ]
+                ],
+                [
+                  [',', [' ']],
+                  ['L', [[[',', [' ']], [['32', '.', '0'], [[' '], ',', [' ']], '1']]]]
+                ],
+                [[' ', ' '], 'z']
+              ]
+            ]
+          ]);
+      });
+
     });
   });
 }

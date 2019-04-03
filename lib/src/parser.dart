@@ -25,14 +25,38 @@ class SvgParserDefinition extends SvgGrammarDefinition {
   svgPath() => super.svgPath().map((Iterable r) => r.toList(growable: false));
 
   @override
-  moveToDrawToCommandGroup() => super.moveToDrawToCommandGroup().map((result) {
-    result = result.where((r) => r != null);
-    return concat(result);
+  moveToDrawToCommandGroups() => super.moveToDrawToCommandGroups().map((result) {
+    return new List.unmodifiable((result as List).expand((x) => x));
   });
 
   @override
+  moveToDrawToCommandGroup() => super.moveToDrawToCommandGroup().map((result) {
+    if(result.length == 2) {
+      return (result as List).expand((x) => x);
+    } else {
+      return result.sublist(1).expand((x) => x);
+    }
+  });
+
+
+
+  @override
   drawToCommands() => super.drawToCommands().map((result) {
-    return concat(result.where((r) => r != null).map((r) => r is Iterable ? r : [r]));
+    return new List.unmodifiable((result as List).expand((x) => x));
+  });
+
+//  @override
+//  drawToCommand() => super.drawToCommand().map((result) {
+//    return result[0];
+//  });
+
+  @override
+  wcDrawToCommand() => super.wcDrawToCommand().map((result) {
+    if(result[0] == null && result.length == 2) {
+      return result[1];
+    } else {
+      return result;
+    }
   });
 
   @override
@@ -40,139 +64,142 @@ class SvgParserDefinition extends SvgGrammarDefinition {
 
   @override
   moveTo() => super.moveTo().map((List result) {
-    // Single move.
-    if (result[2] is Point) {
-      Point point = result[2];
-      return [new SvgPathMoveSegment(point.x, point.y)];
-    }
+    bool relative = !firstIsUpper(result);
 
-    // Multiple move.
-    if (result[2] is Iterable) {
-      return (result[2] as Iterable).where((e) => e is Point).map((Point p) {
-        return new SvgPathMoveSegment(p.x, p.y);
-      });
-    }
+    return new List.unmodifiable((result[1] as List).cast<Point>().map((Point p) => new SvgPathMoveSegment(p.x, p.y, isRelative: relative)));
   });
 
   @override
   lineTo() => super.lineTo().map((List result) {
     bool relative = !firstIsUpper(result);
-
-    // Multiple lines.
-    var list = new List<SvgPathLineSegment>();
-    var third = result[2];
-
-    while (!(third is Point)) {
-      List iterResult = third as List;
-      Point point = iterResult[0];
-      list.add(new SvgPathLineSegment(point.x, point.y, isRelative: relative));
-      third = iterResult[2];
-    }
-
-    Point point = third as Point;
-    list.add(new SvgPathLineSegment(point.x, point.y, isRelative: relative));
-
-    return new List.unmodifiable(list);
+    return new List.unmodifiable(result[1].map((Point p) => new SvgPathLineSegment(p.x, p.y, isRelative: relative)));
   });
 
   @override
   horizontalLineTo() => super.horizontalLineTo().map((List result) {
     bool relative = !firstIsUpper(result);
 
-    var list = new List<SvgPathLineSegment>();
-    var third = result[2];
-
-    while(third is List) {
-      List iterResult = third as List;
-      num number = iterResult[0];
-      list.add(new SvgPathLineSegment(number, null, isRelative: relative));
-      third = iterResult[2];
-    }
-
-    num number = third as num;
-    list.add(new SvgPathLineSegment(number, null, isRelative: relative));
-    return new List.unmodifiable(list);
+    return new List.unmodifiable((result[1] as List).cast<num>().map((num n) => new SvgPathLineSegment(n, null, isRelative: relative)));
   });
 
   @override
   verticalLineTo() => super.verticalLineTo().map((List result) {
     bool relative = !firstIsUpper(result);
-
-    var list = new List<SvgPathLineSegment>();
-    var third = result[2];
-
-    while(!(third is num)) {
-      List iterResult = third as List;
-      num number = iterResult[0];
-      list.add(new SvgPathLineSegment(null, number, isRelative: relative));
-      third = iterResult[2];
-    }
-
-    num number = third as num;
-    list.add(new SvgPathLineSegment(null, number, isRelative: relative));
-    return new List.unmodifiable(list);
+    return new List.unmodifiable((result[1] as List).cast<num>().map((num n) => new SvgPathLineSegment(null, n, isRelative: relative)));
   });
 
   @override
   quadraticBezierLineTo() => super.quadraticBezierLineTo().map((result) {
     bool relative = !firstIsUpper(result);
-    List curveData = result[2];
-    var list = new List<SvgPathCurveQuadraticSegment>();
 
-    for(;;) {
-      Point control = curveData[0];
-      Point endpoint = curveData[2];
-      list.add(new SvgPathCurveQuadraticSegment(endpoint.x, endpoint.y, control.x, control.y, isRelative: relative));
-
-      if(curveData.length == 3) break;
-
-      curveData = curveData[4];
-    }
-
-    return new List.unmodifiable(list);
+    return new List.unmodifiable(result[1].map((List<Point> l) {
+      Point control = l[0];
+      Point endpoint = l[1];
+      return new SvgPathCurveQuadraticSegment(endpoint.x, endpoint.y, control.x, control.y, isRelative: relative);
+    }));
   });
 
   @override
   cubicBezierLineTo() => super.cubicBezierLineTo().map((result) {
     bool relative = !firstIsUpper(result);
-    List curveData = result[2];
-    var list = new List<SvgPathCurveCubicSegment>();
 
-    for(;;) {
-      Point control1 = curveData[0];
-      Point control2 = curveData[2];
-      Point endpoint = curveData[4];
-      list.add(new SvgPathCurveCubicSegment(endpoint.x, endpoint.y, control1.x, control1.y, control2.x, control2.y, isRelative: relative));
-
-      if(curveData.length == 5) break;
-
-      curveData = curveData[6];
-    }
-
-    return new List.unmodifiable(list);
+    return new List.unmodifiable((result[1] as List).cast<List>().map((List l) => l.cast<Point>()).map((List<Point> l) {
+      Point control1 = l[0];
+      Point control2 = l[1];
+      Point endpoint = l[2];
+      return new SvgPathCurveCubicSegment(endpoint.x, endpoint.y, control1.x, control1.y, control2.x, control2.y, isRelative: relative);
+    }));
   });
 
+  @override
+  smoothQuadraticBezierLineTo() => super.smoothQuadraticBezierLineTo().map((result) {
+    bool relative = !firstIsUpper(result);
+
+    return new List.unmodifiable(result[1].map((Point p) {
+      return new SvgPathCurveQuadraticSegment.smooth(p.x, p.y, isRelative: relative);
+    }));
+
+  });
 
   @override
-  coordinatePair() => super.coordinatePair().map((result) {
-    return new Point(result[0], result[2]);
+  smoothCubicBezierLineTo() => super.smoothCubicBezierLineTo().map((result) {
+    bool relative = !firstIsUpper(result);
+
+    return new List.unmodifiable((result[1] as List).cast<List>().map((l) => l.cast<Point>()).map((List<Point> l) {
+      Point control2 = l[0];
+      Point endpoint = l[1];
+      return new SvgPathCurveCubicSegment.smooth(endpoint.x, endpoint.y, control2.x, control2.y, isRelative: relative);
+    }));
+  });
+
+  @override
+  arcToArguments() => super.arcToArguments().map((result) {
+    return new List.unmodifiable(result.where((x) => x != null));
+  });
+
+  @override
+  arcTo() => super.arcTo().map((result) {
+    bool relative = !firstIsUpper(result);
+
+    return new List.unmodifiable((result[1] as List).cast<List>().map((List l) {
+      Point radius = l[0];
+      num rotation = l[1];
+      bool largeArc = l[2];
+      bool sweep = l[3];
+      Point endpoint = l[4];
+      return new SvgPathArcSegment(endpoint.x, endpoint.y, radius.x, radius.y, rotation.toDouble(), isRelative: relative, isLargeArc: largeArc, isSweep: sweep);
+    }));
+  });
+
+  @override
+  wcCoordinate() {
+    return super.wcCoordinate().map((result) {
+      if(result is num) {
+        return result;
+      } else {
+        return result[1];
+      }
+    });
+  }
+
+  @override
+  wcCoordinatePair() {
+    return super.wcCoordinatePair().map((result) {
+      if(result is Point) {
+        return result;
+      } else {
+        return result[1];
+      }
+    });
+  }
+
+  @override
+  coordinatePair() => super.coordinatePair().map((List<dynamic> result) {
+    List<num> nums = result.cast();
+    return new Point(nums[0], nums[2]);
+  });
+
+  @override
+  flag() => super.flag().map((result) {
+    return result[0] == '1';
   });
 
   @override
   number() => super.number().map((result) {
-    final sign = result[0];
-    num number = result[1];
-    if (sign == '-') {
-      number = -number;
+    if(result is List) {
+      final sign = result[0];
+      num number = result[1];
+      if (sign == '-') {
+        number = -number;
+      }
+      return number;
+    } else {
+      return result;
     }
-    return number;
   });
 
   @override
   commaWhitespace() => super.commaWhitespace().map((_) => null);
-
-  @override
-  commaOrWhitespace() => super.commaOrWhitespace().map((_) => null);
 
   @override
   integerConstant() => super.integerConstant().flatten().map(int.parse);

@@ -13,7 +13,7 @@ class SvgParser {
   const SvgParser();
 
   List<SvgPathSegment> parseSvgPath(String svgPath) {
-    return concat(_svgPathParser.parse(svgPath).value).toList(growable: false);
+    return concat(_svgPathParser.parse(svgPath).value.cast<Iterable>()).toList(growable: false).cast();
   }
 }
 

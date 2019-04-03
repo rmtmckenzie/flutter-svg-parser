@@ -16,23 +16,36 @@ class SvgGrammarDefinition extends GrammarDefinition {
       moveToDrawToCommandGroups().optional() &
       whitespace().star();
 
-  /// moveto-drawto-command-group
-  /// | moveto-drawto-command-group comma-or-wsp? moveto-drawto-command-groups
   moveToDrawToCommandGroups() =>
-      (moveToDrawToCommandGroup() &
-          commaOrWhitespace().optional() &
-          ref(moveToDrawToCommandGroups))
-      | moveToDrawToCommandGroup();
+    moveToDrawToCommandGroup().plus();
+
+//  /// moveto-drawto-command-group
+//  /// | moveto-drawto-command-group comma-or-wsp? moveto-drawto-command-groups
+//  moveToDrawToCommandGroups() =>
+//      (moveToDrawToCommandGroup() &
+//          commaOrWhitespace().optional() &
+//          ref(moveToDrawToCommandGroups))
+//      | moveToDrawToCommandGroup();
 
   /// moveto comma-or-wsp? drawto-commands?
   moveToDrawToCommandGroup() =>
-      moveTo() & commaOrWhitespace().optional() & drawToCommands();
+    (commaWhitespace() & moveTo() & drawToCommands())
+    | (moveTo() & drawToCommands());
 
-  /// drawto-command
-  /// | drawto-command comma-or-wsp? drawto-commands
   drawToCommands() =>
-      (drawToCommand() & commaOrWhitespace().optional() & ref(drawToCommands))
-      | drawToCommand();
+    wcDrawToCommand().plus();
+
+//  /// drawto-command
+//  /// | drawto-command comma-or-wsp? drawto-commands
+//  drawToCommands() =>
+//      (drawToCommand() & commaOrWhitespace().optional() & ref(drawToCommands))
+//      | drawToCommand();
+
+
+  wcDrawToCommand() =>
+    (commaWhitespace() & drawToCommand())
+    | drawToCommand();
+
 
   /// closepath
   /// | lineto
@@ -43,81 +56,124 @@ class SvgGrammarDefinition extends GrammarDefinition {
   /// | quadratic-bezier-curveto
   /// | smooth-quadratic-bezier-curveto
   /// | elliptical-arc
-  drawToCommand() =>
+  drawToCommand() => (
     lineTo() |
     horizontalLineTo() |
     verticalLineTo() |
     closePath() |
+    quadraticBezierLineTo() |
     cubicBezierLineTo() |
-    quadraticBezierLineTo();
+    smoothQuadraticBezierLineTo() |
+    smoothCubicBezierLineTo() |
+    arcTo()
+  );
 
-  /// ( "M" | "m" ) comma-or-wsp? moveto-argument-sequence
-  moveTo() => pattern('Mm') & commaOrWhitespace().optional() & pointToArgumentSequence();
+  /// ( "M" | "m" ) moveto-argument-sequence
+  moveTo() => pattern('Mm') & pointToArgumentSequence();
 
   /// ( "Z" | "z" )
   closePath() => pattern('Zz');
 
-  /// ( "L" | "l" ) comma-or-wsp? pointto-argument-sequence
-  lineTo() => pattern('Ll') & commaOrWhitespace().optional() & pointToArgumentSequence();
+  /// ( "L" | "l" ) pointto-argument-sequence
+  lineTo() => pattern('Ll') &  pointToArgumentSequence();
 
-  /// ("H" | "h" ) comma-or-wsp? singlearg-pointto-argument-sequence
-  horizontalLineTo() => pattern('Hh') & commaOrWhitespace().optional() & halfPointToArgumentSequence();
+  /// ("H" | "h" ) singlearg-pointto-argument-sequence
+  horizontalLineTo() => pattern('Hh') & coordinateSequence();
 
-  /// ("V" | "v" ) comma-or-wsp? singlearg-pointto-argument-sequence
-  verticalLineTo() => pattern('Vv') & commaOrWhitespace().optional() & halfPointToArgumentSequence();
+  /// ("V" | "v" ) singlearg-pointto-argument-sequence
+  verticalLineTo() => pattern('Vv') & coordinateSequence();
 
-  /// ("Q" | "q") comma-or-wsp? double-pointto-argument-sequence
-  quadraticBezierLineTo() => pattern('Qq') & commaOrWhitespace().optional() & doublePointToArgumentSequence();
+  /// ("Q" | "q") double-pointto-argument-sequence
+  quadraticBezierLineTo() => pattern('Qq') & doublePointToArgumentSequence();
 
-  /// ("C" | "c") comma-or-wsp? triple-pointto-argument-sequence
-  cubicBezierLineTo() => pattern('Cc') & commaOrWhitespace().optional() & triplePointToArgumentSequence();
+  /// ("C" | "c") triple-pointto-argument-sequence
+  cubicBezierLineTo() => pattern('Cc') & triplePointToArgumentSequence();
 
-  /// coordinate | coordinate comma-or-wsp? & horizontal-lineto-argument-sequence
-  halfPointToArgumentSequence() =>
-      (coordinate() &
-          commaOrWhitespace().optional() &
-          ref(halfPointToArgumentSequence))
-      | coordinate();
+  /// ("S" | "s") double-pointto-argument-sequence
+  smoothCubicBezierLineTo() => pattern('Ss') & doublePointToArgumentSequence();
 
-  /// coordinate-pair
-  /// | coordinate-pair comma-or-wsp? pointto-argument-sequence
-  pointToArgumentSequence() =>
-      (coordinatePair() &
-          commaOrWhitespace().optional() &
-          ref(pointToArgumentSequence))
-      | coordinatePair();
+  /// ("T" | "t") pointto-argument-sequence
+  smoothQuadraticBezierLineTo() => pattern('Tt') & pointToArgumentSequence();
 
-  /// coordinate-pair comma-or-wsp? coordinate-pair
-  /// | coordinate-pair comma-or-wsp? coordinate-pair comma-or-wsp? double-pointto-argument-sequence
-  doublePointToArgumentSequence() =>
-      (coordinatePair() &
-          commaOrWhitespace().optional() &
-          coordinatePair() &
-          commaOrWhitespace().optional() &
-          ref(doublePointToArgumentSequence))
-      | (coordinatePair() &
-          commaOrWhitespace().optional() &
-          coordinatePair());
+  arcTo() => pattern('Aa') & arcToArgumentSequence();
 
-  /// coordinate-pair comma-or-wsp? coordinate-pair comma-or-wsp? coordinate-pair
-  /// | coordinate-pair comma-or-wsp? coordinate-pair comma-or-wsp? coordinate-pair comma-or-wsp? triple-pointto-argument-sequence
-  triplePointToArgumentSequence() =>
-      (coordinatePair() &
-          commaOrWhitespace().optional() &
-          coordinatePair() &
-          commaOrWhitespace().optional() &
-          coordinatePair() &
-          commaOrWhitespace().optional() &
-          ref(triplePointToArgumentSequence))
-      | (coordinatePair() &
-          commaOrWhitespace().optional() &
-          coordinatePair() &
-          commaOrWhitespace().optional() &
-          coordinatePair());
+  coordinateSequence() => wcCoordinate().plus();
+
+//  /// coordinate | coordinate comma-or-wsp? & horizontal-lineto-argument-sequence
+//  halfPointToArgumentSequence() =>
+//      (coordinate() &
+//          commaOrWhitespace().optional() &
+//          ref(halfPointToArgumentSequence))
+//      | coordinate();
+
+//  /// coordinate-pair
+//  /// | coordinate-pair comma-or-wsp? pointto-argument-sequence
+//  pointToArgumentSequence() =>
+//      (coordinatePair() &
+//          commaOrWhitespace().optional() &
+//          ref(pointToArgumentSequence))
+//      | coordinatePair();
+
+  pointToArgumentSequence() => (
+    wcCoordinatePair()
+  ).plus();
+
+//  /// coordinate-pair comma-or-wsp? coordinate-pair
+//  /// | coordinate-pair comma-or-wsp? coordinate-pair comma-or-wsp? double-pointto-argument-sequence
+//  doublePointToArgumentSequence() =>
+//      (coordinatePair() &
+//          commaOrWhitespace().optional() &
+//          coordinatePair() &
+//          commaOrWhitespace().optional() &
+//          ref(doublePointToArgumentSequence))
+//      | (coordinatePair() &
+//          commaOrWhitespace().optional() &
+//          coordinatePair());
+
+  doublePointToArgumentSequence() => (
+    wcCoordinatePair() & wcCoordinatePair()
+  ).plus();
+
+//  /// coordinate-pair comma-or-wsp? coordinate-pair comma-or-wsp? coordinate-pair
+//  /// | coordinate-pair comma-or-wsp? coordinate-pair comma-or-wsp? coordinate-pair comma-or-wsp? triple-pointto-argument-sequence
+//  triplePointToArgumentSequence() =>
+//      (coordinatePair() &
+//          commaOrWhitespace().optional() &
+//          coordinatePair() &
+//          commaOrWhitespace().optional() &
+//          coordinatePair() &
+//          commaOrWhitespace().optional() &
+//          ref(triplePointToArgumentSequence))
+//      | (coordinatePair() &
+//          commaOrWhitespace().optional() &
+//          coordinatePair() &
+//          commaOrWhitespace().optional() &
+//          coordinatePair());
+
+  triplePointToArgumentSequence() => (
+    wcCoordinatePair() & wcCoordinatePair() & wcCoordinatePair()
+  ).plus();
+
+  arcToArgumentSequence() => arcToArguments().plus();
+
+  arcToArguments() => (
+    wcCoordinatePair() & commaWhitespace().optional() &
+    number() & commaWhitespace().optional() &
+    flag() & commaWhitespace().optional() &
+    flag() & wcCoordinatePair()
+  );
+
+  wcCoordinate() =>
+    (commaWhitespace() & coordinate())
+    | coordinate();
+
+  wcCoordinatePair() =>
+    (commaWhitespace() & coordinatePair())
+    | coordinatePair();
 
   /// coordinate comma-or-wsp? coordinate
   coordinatePair() =>
-      coordinate() & commaOrWhitespace().optional() & coordinate();
+    coordinate() & commaWhitespace().optional() & coordinate();
 
   /// number
   coordinate() => number();
@@ -129,21 +185,21 @@ class SvgGrammarDefinition extends GrammarDefinition {
   /// sign? integer-constant
   /// | sign? floating-point-constant
   number() =>
-      sign().optional() & floatingPointConstant()
-      | sign().optional() & integerConstant();
+      sign() & floatingPointConstant()
+      | sign() & integerConstant()
+      | floatingPointConstant()
+      | integerConstant();
 
   /// "0" | 1
   flag() => pattern('01');
 
-  /// (wsp+ comma? wsp*) | (comma wsp*)
+  /// (wsp* comma wsp*)
   commaWhitespace() =>
-      (comma() & whitespace().star())
-      | (whitespace().plus() & comma().optional() & whitespace().star());
-
-  /// (wsp+) | (commaWhitespace)
-  commaOrWhitespace() =>
-      whitespace().plus()
-      | commaWhitespace();
+      (whitespace().plus() & comma() & whitespace().plus())
+      | (comma() & whitespace().plus())
+      | (whitespace().plus() & comma())
+      | whitespace().plus()
+      | comma();
 
   /// ","
   comma() => char(',');
@@ -154,17 +210,21 @@ class SvgGrammarDefinition extends GrammarDefinition {
   /// fractional-constant exponent?
   /// | digit-sequence exponent
   floatingPointConstant() =>
-      fractionalConstant() & exponent().optional()
-      | digitSequence() & exponent();
+    (fractionalConstant() & exponent())
+    | (digitSequence() & exponent())
+    | fractionalConstant();
 
   /// digit-sequence? "." digit-sequence
   /// | digit-sequence "."
   fractionalConstant() =>
-      (digitSequence().optional() & char('.') & digitSequence())
-      | (digitSequence() & char('.'));
+    (digitSequence() & char('.') & digitSequence())
+    | (char('.') & digitSequence())
+    | (digitSequence() & char('.'));
 
   /// ( "e" | "E" ) sign? digit-sequence
-  exponent() => pattern('eE') & sign().optional() & digitSequence();
+  exponent() =>
+    (pattern('eE') & digitSequence())
+    | (pattern('eE') & sign() & digitSequence());
 
   /// "+" | "-"
   sign() => pattern('+-');

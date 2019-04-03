@@ -117,34 +117,34 @@ void main() {
       });
     });
 
-    group('Move to', () {
+    group('Move to.', () {
       final parseMove = definition.build(
           start: definition.moveTo)
           .parse;
 
       test('can parse a simple command', () {
         expect(
-            parseMove('m5,5').value,
-            [const SvgPathMoveSegment(5, 5)]);
+            parseMove('M5,5').value,
+            [const SvgPathMoveSegment(5, 5, isRelative: false)]);
       });
 
       test('can parse a simple command using space', () {
         expect(
           parseMove('m5 5').value,
-          [const SvgPathMoveSegment(5, 5)]);
+          [const SvgPathMoveSegment(5, 5, isRelative: true)]);
       });
 
       test('can parse followed by additional moves', () {
         expect(
             parseMove('m0,0,5,5').value,
             [
-              const SvgPathMoveSegment(0, 0),
-              const SvgPathMoveSegment(5, 5)
+              const SvgPathMoveSegment(0, 0, isRelative: true),
+              const SvgPathMoveSegment(5, 5, isRelative: true)
             ]);
       });
     });
 
-    group('Draw to', () {
+    group('Draw to (single)', () {
       final parseDraw = definition.build(
           start: definition.drawToCommand)
           .parse;
@@ -238,9 +238,29 @@ void main() {
             const SvgPathLineSegment(3, 4)
           ]);
       });
+
+      test('can parse move/draw with multiple draws', () {
+        expect(
+          parseDraw('M1,2 L3,4 L5,6 7,8').value,
+          const [
+            const SvgPathMoveSegment(1, 2),
+            const SvgPathLineSegment(3, 4),
+            const SvgPathLineSegment(5, 6),
+            const SvgPathLineSegment(7, 8)
+          ]);
+      });
+
+      test('can parse move/draw with space at the beginning', () {
+        expect(
+          parseDraw(' M4,3 L2,1').value,
+          const [
+            const SvgPathMoveSegment(4, 3),
+            const SvgPathLineSegment(2, 1)
+          ]);
+      });
     });
 
-    group('Horizontal draw to command', () {
+    group('Horizontal draw to command (single)', () {
       final parseDraw = definition.build(
         start: definition.drawToCommand)
         .parse;
@@ -317,7 +337,7 @@ void main() {
       });
     });
 
-    group('Vertical draw to command', () {
+    group('Vertical draw to command (single)', () {
       final parseDraw = definition.build(
         start: definition.drawToCommand)
         .parse;
@@ -394,7 +414,7 @@ void main() {
       });
     });
 
-    group('Quadratic Curve Draw To', () {
+    group('Quadratic Curve Draw To (Single)', () {
       final parseDraw = definition.build(
         start: definition.drawToCommand)
         .parse;
@@ -442,7 +462,7 @@ void main() {
       });
     });
 
-    group('Cubic Curve Draw To', () {
+    group('Cubic Curve Draw To (Single)', () {
       final parseDraw = definition
         .build(
         start: definition.drawToCommand)
@@ -454,6 +474,15 @@ void main() {
           const[
             const SvgPathCurveCubicSegment(3, 3, 1.5, 1.5, 2, 2)
           ]);
+      });
+
+      test('can parse a relative cubic line to command', () {
+        expect(
+          parseDraw('c1,2,3,4,5,6').value,
+          const [
+            const SvgPathCurveCubicSegment(5, 6, 1, 2, 3, 4, isRelative: true)
+          ]
+        );
       });
     });
 
@@ -482,6 +511,109 @@ void main() {
       });
     });
 
+    group('Smooth Quadtratic Curve Draw To (Single)', () {
+      final parseDraws = definition.build(
+        start: definition.drawToCommand
+      ).parse;
+
+      test('can parse a smooth quadratic line segment', () {
+        expect(
+          parseDraws('T1,2').value,
+          const [
+            const SvgPathCurveQuadraticSegment(1, 2, null, null)
+          ]
+        );
+      });
+
+      test('can parse a relative smooth quadratic line segment', () {
+        expect(
+          parseDraws('t1.1,224').value,
+          const [
+            const SvgPathCurveQuadraticSegment.smooth(1.1, 224, isRelative: true)
+          ]
+        );
+      });
+    });
+
+    group('Smooth quadtratic curve draw to (Multiple)', () {
+      final parseDraws = definition.build(
+        start: definition.drawToCommands
+      ).parse;
+
+      test('can parse multiple smooth quadratic lines with multiple specifiers', () {
+        expect(
+          parseDraws('T8,9 t1,2').value,
+          const [
+            const SvgPathCurveQuadraticSegment.smooth(8, 9),
+            const SvgPathCurveQuadraticSegment.smooth(1, 2, isRelative: true)
+          ]
+        );
+      });
+
+      test('can parse multiple smooth quadratic lines with a single specifier', () {
+        expect(
+          parseDraws('T5,5 4,4 3,3').value,
+          const [
+            const SvgPathCurveQuadraticSegment.smooth(5, 5),
+            const SvgPathCurveQuadraticSegment.smooth(4, 4),
+            const SvgPathCurveQuadraticSegment.smooth(3, 3)
+          ]
+        );
+      });
+    });
+
+    group('Smooth Cubic Curve Draw To (Single)', () {
+      final parseDraws = definition.build(
+        start: definition.drawToCommand
+      ).parse;
+
+      test('can parse a smooth cubic line segment', () {
+        expect(
+          parseDraws('S1,2 3,4').value,
+          const [
+            const SvgPathCurveCubicSegment(3,4, null, null, 1, 2)
+          ]
+        );
+      });
+
+      test('can parse a relative smooth cubic line segment', () {
+        expect(
+          parseDraws('s1.1,224, 5,6').value,
+          const [
+            const SvgPathCurveCubicSegment.smooth(5, 6, 1.1, 224, isRelative: true)
+          ]
+        );
+      });
+    });
+
+    group('Smooth Cubic curve draw to (Multiple)', () {
+      final parseDraws = definition.build(
+        start: definition.drawToCommands
+      ).parse;
+
+      test('can parse multiple smooth cubic lines with multiple specifiers', () {
+        expect(
+          parseDraws('S8,9 2,2 s1,2 3,3').value,
+          const [
+            const SvgPathCurveCubicSegment.smooth(2,2, 8, 9),
+            const SvgPathCurveCubicSegment.smooth(3,3, 1, 2, isRelative: true)
+          ]
+        );
+      });
+
+      test('can parse multiple smooth cubic lines with a single specifier', () {
+        expect(
+          parseDraws('S5,5 4,4 3,3 2,2 1,1 0,0').value,
+          const [
+            const SvgPathCurveCubicSegment.smooth(4, 4, 5, 5),
+            const SvgPathCurveCubicSegment.smooth(2, 2, 3, 3),
+            const SvgPathCurveCubicSegment.smooth(0, 0, 1, 1)
+          ]
+        );
+      });
+    });
+
+
     group('Path', () {
       final parseSvgPath = definition.build(
           start: definition.moveToDrawToCommandGroups)
@@ -496,6 +628,18 @@ void main() {
           const SvgPathClose()
         ]);
       });
+
+      test('can parse a path with multiple parts', () {
+        // Multiple paths
+        expect(parseSvgPath('M0,1 L1,2 M3,2 L3,1 M4,2 L0,1').value, const [
+          const SvgPathMoveSegment(0,1),
+          const SvgPathLineSegment(1, 2),
+          const SvgPathMoveSegment(3, 2),
+          const SvgPathLineSegment(3, 1),
+          const SvgPathMoveSegment(4, 2),
+          const SvgPathLineSegment(0, 1)
+        ]);
+      });
     });
   });
 
@@ -506,5 +650,17 @@ void main() {
       const SvgPathLineSegment(7.5, 0),
       const SvgPathClose()
     ]);
+  });
+
+  test('parseSvgPath works as intended for a poorly formatted path', () {
+    expect(
+      svg.parseSvgPath('M1,1 , L14,12        4,3, L, 32.0 , 1  z'),
+      const [
+        const SvgPathMoveSegment(1, 1),
+        const SvgPathLineSegment(14, 12),
+        const SvgPathLineSegment(4, 3),
+        const SvgPathLineSegment(32.0, 1),
+        const SvgPathClose()
+      ]);
   });
 }
