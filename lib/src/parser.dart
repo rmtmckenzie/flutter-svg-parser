@@ -72,7 +72,7 @@ class SvgParserDefinition extends SvgGrammarDefinition {
   @override
   lineTo() => super.lineTo().map((List result) {
     bool relative = !firstIsUpper(result);
-    return new List.unmodifiable(result[1].map((Point p) => new SvgPathLineSegment(p.x, p.y, isRelative: relative)));
+    return new List.unmodifiable((result[1] as List).cast<Point>().map((Point p) => new SvgPathLineSegment(p.x, p.y, isRelative: relative)));
   });
 
   @override
